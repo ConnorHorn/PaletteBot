@@ -4,8 +4,9 @@
     import {colorStatuses, firstLoad, totalGenerations} from "../stores.js";
     import {tweened} from "svelte/motion";
     import {cubicOut, backInOut, cubicIn} from "svelte/easing";
-    import { createEventDispatcher } from 'svelte';
-    const positionMaker = tweened(0, { duration: 1750, easing: cubicOut });
+    import {createEventDispatcher, onMount} from 'svelte';
+    const xPositionMaker = tweened(0, { duration: 1750, easing: cubicOut });
+    const yPositionMaker = tweened(0, { duration: 1750, easing: cubicOut });
     let scalePulse = tweened(1, { duration: 300, easing: cubicOut });
     let copying=false;
     let swapping = false;
@@ -21,6 +22,18 @@
     export let colorName = "Color Name";
 
     let xOffset = 0;
+    let yOffset = 0;
+    let screenWidth = window.innerWidth;
+    let cardGap = 10;
+
+    let bigGap = 400;
+
+    let cardWidth = 270;
+    let cardHeight = 360;
+
+    let widthClass = `w-[${cardWidth}px]`;
+    let heightClass = `h-[${cardHeight}px]`;
+
     if(position === 1) xOffset = -600;
     if(position === 2) xOffset = -300;
     if(position === 4) xOffset = 300;
@@ -29,11 +42,112 @@
 
     $: setReadableTextColor(color);
 
-    setTimeout(function(){
-        positionMaker.set(xOffset);
-    }, 1050);
+    $: setPosition(screenWidth);
 
-    function pulse() {
+    $: widthClass = `w-[${cardWidth}px]`;
+    $: heightClass = `h-[${cardHeight}px]`;
+
+    setPosition(screenWidth);
+
+
+    function setPosition(){
+        if(450 < screenWidth && screenWidth < 1350){
+            if(position === 1){
+                xOffset = -105-(cardGap/2);
+                yOffset = 0;
+            }
+            if(position === 2){
+                xOffset = 105+(cardGap/2);
+                yOffset = 0;
+            }
+            if(position === 3){
+                xOffset = -105-(cardGap/2);
+                yOffset = 280+cardGap;
+            }
+            if(position === 4){
+                xOffset = 105+(cardGap/2);
+                yOffset = 280+cardGap;
+            }
+            if(position === 5){
+                xOffset = 0;
+                yOffset = 560+cardGap*2;
+            }
+            cardWidth = screenWidth;
+            cardHeight = screenWidth/3 * (360/270);
+            bigGap = 260;
+
+        }else if(screenWidth <= 450) {
+            if (position === 1) {
+                xOffset = -75 - (cardGap / 2);
+                yOffset = 0;
+            }
+            if (position === 2) {
+                xOffset = 75 + (cardGap / 2);
+                yOffset = 0;
+            }
+            if (position === 3) {
+                xOffset = -75 - (cardGap / 2);
+                yOffset = 200 + cardGap;
+            }
+            if (position === 4) {
+                xOffset = 75 + (cardGap / 2);
+                yOffset = 200 + cardGap;
+            }
+            if (position === 5) {
+                xOffset = 0;
+                yOffset = 400 + cardGap * 2;
+            }
+            cardWidth = screenWidth/3;
+            cardHeight = screenWidth / 2 * (360 / 270);
+            bigGap = 260;
+        }
+        else{
+            if(position === 1){
+                xOffset = -600;
+                yOffset = 0;
+            }
+            if(position === 2){
+                xOffset = -300;
+                yOffset = 0;
+            }
+            if(position === 3){
+                xOffset = 0;
+                yOffset = 0;
+            }
+            if(position === 4){
+                xOffset = 300;
+                yOffset = 0;
+            }
+            if(position === 5){
+                xOffset = 600;
+                yOffset = 0;
+            }
+            bigGap = 400;
+        }
+        setTimeout(function(){
+            xPositionMaker.set(xOffset);
+        }, 1050);
+
+        setTimeout(function(){
+            yPositionMaker.set(yOffset);
+        }, 1050);
+    }
+
+    function updateWidth() {
+        screenWidth = window.innerWidth;
+    }
+
+    onMount(() => {
+        window.addEventListener('resize', updateWidth);
+        updateWidth(); // Initial update
+
+        // Remove event listener on component destroy
+        return () => {
+            window.removeEventListener('resize', updateWidth);
+        };
+    });
+
+    function X() {
         swapping=true;
 
         dispatch('swap', {
@@ -53,6 +167,10 @@
             }, 200);
     }
 
+
+
+    console.log(widthClass)
+
     function setReadableTextColor(hexColor) {
         // convert hex color code to RGB
         let r = parseInt(hexColor.slice(1, 3), 16);
@@ -67,6 +185,12 @@
     }
 
     async function clickedCard() {
+        scalePulse = tweened(1, {duration: 200, easing: cubicOut});
+        scalePulse.set(0.93);
+        setTimeout(function () {
+            scalePulse = tweened(0.93, {duration: 200, easing: cubicIn});
+            scalePulse.set(1);
+        }, 200);
         if (swapping) return;
         console.log("clicked card")
         copying = true;
@@ -75,12 +199,23 @@
             console.log('Text copied to clipboard');
         } catch (err) {
             console.error('Failed to copy text: ', err);
+            // Fallback for older browsers or in case the Clipboard API fails
+            try {
+                const textarea = document.createElement('textarea');
+                textarea.value = color;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                console.log('Text copied to clipboard using fallback');
+            } catch (err) {
+                console.error('Failed to copy text using fallback: ', err);
+            }
         }
         setTimeout(function () {
             copying = false;
         }, 200);
     }
-
 
 </script>
 
@@ -109,12 +244,12 @@
 
 
 {#if $firstLoad && $colorStatuses[position-1] === "loading"}
-    <div style="transform: translate({$positionMaker}px,{400}px) scale({$scalePulse})" in:fly={$totalGenerations===0 ? {y: -300, duration: 1000} : {}} class="absolute z-10 h-[360px] w-[270px] background-animate bg-gradient-to-r from-pink-500 via-red-500 to-yellow-500 rounded-3xl flex flex-col justify-end p-2 shadow-sm opacity-50"></div>
+    <div style="transform: translate({$xPositionMaker}px,{bigGap+$yPositionMaker}px) scale({$scalePulse})" in:fly={$totalGenerations===0 ? {y: -300, duration: 1000} : {}} class="absolute z-10 {screenWidth<1350 ? (screenWidth<450 ? 'h-[200px]' : 'h-[280px]') : 'h-[360px]'} {screenWidth<1350 ? (screenWidth<450 ? 'w-[150px]' : 'w-[210px]') : 'w-[270px]'} background-animate bg-gradient-to-r from-pink-500 via-red-500 to-yellow-500 rounded-3xl flex flex-col justify-end p-2 shadow-sm opacity-50"></div>
 {/if}
 {#if $colorStatuses[position-1] === "loaded"}
 
-    <div on:click={clickedCard} style="transform: translate({$positionMaker}px,{400}px) scale({$scalePulse});  background-color: {color}" class="absolute h-[360px] w-[270px] rounded-3xl flex flex-col justify-end p-2 shadow-sm">
-    <button class="absolute top-2 right-2" on:click={pulse}>
+    <div on:click={clickedCard} style="transform: translate({$xPositionMaker}px,{bigGap+$yPositionMaker}px) scale({$scalePulse});  background-color: {color}" class="absolute {screenWidth<1350 ? (screenWidth<450 ? 'h-[200px]' : 'h-[280px]') : 'h-[360px]'} {screenWidth<1350 ? (screenWidth<450 ? 'w-[150px]' : 'w-[210px]') : 'w-[270px]'} rounded-3xl flex flex-col justify-end p-2 shadow-sm">
+    <button class="absolute top-2 right-2" on:click={X}>
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke={textColor} class="h-6 w-6 opacity-50">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
         </svg>
