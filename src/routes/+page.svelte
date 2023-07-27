@@ -245,7 +245,7 @@
 
 				if (stop) return;
 
-				// Wait a second at the end of the word
+				// Waits a second at the end of the word
 				await new Promise(resolve => setTimeout(resolve, 800));
 
 				// Remove the word one character at a time
