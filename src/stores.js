@@ -1,4 +1,5 @@
 import {writable} from "svelte/store";
+
 export const firstLoad=writable(false);
 
 export const totalGenerations=writable(0);

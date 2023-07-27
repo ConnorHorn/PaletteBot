@@ -7,4 +7,9 @@
 	import '../app.postcss';
 </script>
 
+<svelte:head>
+    <title>PaletteBot</title>
+</svelte:head>
+
+
 <slot />

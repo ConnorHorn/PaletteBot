@@ -9,6 +9,7 @@
 
 	const scale = tweened(1, { duration: 180, easing: cubicOut });
 
+
 	let colorCodes = [];
 	let colors = [];
 	let input = "";
@@ -28,6 +29,8 @@
 
 	let runningColorErrors = 0;
 
+	let hasVisitedBefore = false;
+
 
 	onMount(() => {
 		$: if ($totalGenerations < 1) {
@@ -37,7 +40,14 @@
 		} else {
 			stop = true;
 		}
+		if (localStorage.getItem('hasVisited')) {
+			hasVisitedBefore = true;
+		} else {
+			localStorage.setItem('hasVisited', 'true');
+		}
+		console.log("Been Here "+hasVisitedBefore);
 	});
+
 
 	$: if($totalGenerations>0){
 		stop=true;
@@ -295,17 +305,17 @@
 
 
 <div class="flex items-center justify-center h-screen bg-transparent relative w-full transform-gpu"
-	 style="transform: translate({0}px,{$inputUp-10}px); padding-top: {$inputUp*-1-100}px;">
+	 style="transform: translate({0}px,{$inputUp-10}px); padding-top: {($inputUp*-1-100)}px;">
 
 	<div class="relative z-30 flex flex-col items-center w-full">
 
-		<div style="font-family: {gennedFont}" class="text-6xl sm:text-8xl font-bold mb-4 sm:mb-2 text-center w-full">
+		<div style="transform: translate({0}px,{(($inputUp/300)*-20)-30}px); font-family: {gennedFont}" class="text-6xl sm:text-8xl font-bold text-center w-full">
 			paletteBot
 		</div>
 		{#if $inputUp}
 			<div class="text-base sm:text-2xl font-bold mb-5 sm:mb-2 text-center w-full">
 				{#if $totalGenerations>0}
-					<a href={fontLink} class="">{gennedFont}</a>
+					<a href={fontLink} target="_blank" rel="noopener noreferrer" class="">{gennedFont}</a>
 				{:else}
 					&nbsp;
 				{/if}
@@ -313,7 +323,7 @@
 		{/if}
 
 		<div class="w-10/12 sm:w-10/12 md:w-2/3 lg:w-1/2 xl:w-1/3 relative">
-			<input class="input w-full py-4 pl-8 pr-24 text-xl" placeholder={placeholder} bind:value={input} on:keydown={checkForEnter}/>
+			<input class="input w-full py-4 pl-8 pr-24 text-m sm:text-xl" placeholder={placeholder} bind:value={input} on:keydown={checkForEnter}/>
 
 			{#if $loading}
 				<div class="absolute right-4 top-1/2 transform-gpu" style="transform: scale({$scale}) translateY(-50%);">
